@@ -4,7 +4,7 @@
  */
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, MoreHorizontal, Trash2, Copy, Share2, FolderOpen } from 'lucide-react';
+import { Plus, Trash2, Copy, Share2, FolderOpen } from 'lucide-react';
 
 import { ROUTES, generatePath } from '@/routes';
 import { useProjectStore } from '@/stores/projectStore';

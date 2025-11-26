@@ -79,20 +79,22 @@ function createDefaultScene(index: number): Scene {
 /** 创建默认项目 */
 function createDefaultProject(params: CreateProjectParams): Project {
   const now = Date.now();
+  const meta: Project['meta'] = {
+    title: params.title || '未命名项目',
+    createdAt: now,
+    updatedAt: now,
+    durationMs: 10000,
+    frameRate: params.frameRate ?? 30,
+    width: params.width ?? 1920,
+    height: params.height ?? 1080,
+  };
+  if (params.description) meta.description = params.description;
+  
   return {
     id: nanoid(),
     version: 1,
     status: 'draft',
-    meta: {
-      title: params.title || '未命名项目',
-      description: params.description,
-      createdAt: now,
-      updatedAt: now,
-      durationMs: 10000,
-      frameRate: params.frameRate ?? 30,
-      width: params.width ?? 1920,
-      height: params.height ?? 1080,
-    },
+    meta,
     scenes: [createDefaultScene(0)],
     style: {
       id: nanoid(),
@@ -158,7 +160,7 @@ export const useProjectStore = create<ProjectStore>()(
 
         // 保存项目
         saveProject: () => {
-          const { currentProject, projects } = get();
+          const { currentProject } = get();
           if (!currentProject) return;
 
           set((state) => {

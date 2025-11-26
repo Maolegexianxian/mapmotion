@@ -31,7 +31,7 @@ export function EditorTimeline({ isCollapsed, onToggle }: EditorTimelineProps) {
   const currentScene = currentProject?.scenes[currentSceneIndex];
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
+  const [currentTime] = useState(0);
   const [isLooping, setIsLooping] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
 

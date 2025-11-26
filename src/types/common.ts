@@ -246,3 +246,62 @@ export type Unsubscribe = () => void;
 export interface Disposable {
   dispose: () => void;
 }
+
+/**
+ * 相机状态
+ * 定义地图视角的完整状态
+ */
+export interface CameraState {
+  /** 中心点坐标 */
+  center: GeoCoordinate;
+  /** 缩放级别 (0-22) */
+  zoom: number;
+  /** 俯仰角 (0-85度) */
+  pitch: number;
+  /** 方位角 (0-360度) */
+  bearing: number;
+}
+
+/**
+ * 地图边界
+ * 用于定义地图的可视范围
+ */
+export interface MapBounds {
+  /** 西边界（最小经度） */
+  west: number;
+  /** 南边界（最小纬度） */
+  south: number;
+  /** 东边界（最大经度） */
+  east: number;
+  /** 北边界（最大纬度） */
+  north: number;
+}
+
+/**
+ * 图层配置接口
+ * 用于配置 MapLibre GL 图层
+ */
+export interface LayerConfig {
+  /** 图层唯一标识 */
+  id: string;
+  /** 图层类型 */
+  type: 'point' | 'line' | 'polygon' | 'symbol' | 'heatmap' | '3d-model' | 'raster' | 'background';
+  /** 数据源 */
+  source?: Record<string, unknown>;
+  /** 数据源图层（用于矢量瓦片） */
+  sourceLayer?: string;
+  /** 是否可见 */
+  visible?: boolean;
+  /** 透明度 */
+  opacity?: number;
+  /** 绘制属性 */
+  paint?: Record<string, unknown>;
+  /** 布局属性 */
+  layout?: Record<string, unknown>;
+  /** 过滤器 */
+  filter?: unknown[];
+  /** 最小缩放级别 */
+  minzoom?: number;
+  /** 最大缩放级别 */
+  maxzoom?: number;
+}

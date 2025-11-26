@@ -95,8 +95,8 @@ export function initializeI18n() {
  * 
  * @param language - 目标语言代码
  */
-export function changeLanguage(language: LanguageCode): Promise<void> {
-  return i18n.changeLanguage(language) as Promise<void>;
+export async function changeLanguage(language: LanguageCode): Promise<void> {
+  await i18n.changeLanguage(language);
 }
 
 /**

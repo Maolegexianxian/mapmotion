@@ -98,22 +98,22 @@ export function ToastProvider({ children }: ToastProviderProps) {
 
   /** 成功提示 */
   const success = useCallback((title: string, message?: string): string => {
-    return addToast({ type: 'success', title, message });
+    return addToast(message ? { type: 'success', title, message } : { type: 'success', title });
   }, [addToast]);
 
   /** 错误提示 */
   const error = useCallback((title: string, message?: string): string => {
-    return addToast({ type: 'error', title, message });
+    return addToast(message ? { type: 'error', title, message } : { type: 'error', title });
   }, [addToast]);
 
   /** 警告提示 */
   const warning = useCallback((title: string, message?: string): string => {
-    return addToast({ type: 'warning', title, message });
+    return addToast(message ? { type: 'warning', title, message } : { type: 'warning', title });
   }, [addToast]);
 
   /** 信息提示 */
   const info = useCallback((title: string, message?: string): string => {
-    return addToast({ type: 'info', title, message });
+    return addToast(message ? { type: 'info', title, message } : { type: 'info', title });
   }, [addToast]);
 
   const value: ToastContextValue = {
