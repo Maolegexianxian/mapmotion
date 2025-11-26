@@ -115,6 +115,36 @@ export const zhCN = {
 
   // 编辑器
   editor: {
+    // 工具
+    tools: {
+      select: '选择',
+      pan: '平移',
+      point: '点',
+      line: '线',
+      polygon: '多边形',
+      label: '标签',
+    },
+    // 操作
+    actions: {
+      undo: '撤销',
+      redo: '重做',
+      zoomIn: '放大',
+      zoomOut: '缩小',
+      fitView: '适应视图',
+    },
+    // 视图
+    view: {
+      grid: '网格',
+      rulers: '标尺',
+      snap: '吸附',
+    },
+    // 播放
+    playback: {
+      play: '播放',
+      pause: '暂停',
+      stop: '停止',
+      loop: '循环',
+    },
     // 工具栏
     toolbar: {
       newProject: '新建项目',

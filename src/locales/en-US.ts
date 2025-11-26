@@ -115,6 +115,36 @@ export const enUS = {
 
   // Editor
   editor: {
+    // Tools
+    tools: {
+      select: 'Select',
+      pan: 'Pan',
+      point: 'Point',
+      line: 'Line',
+      polygon: 'Polygon',
+      label: 'Label',
+    },
+    // Actions
+    actions: {
+      undo: 'Undo',
+      redo: 'Redo',
+      zoomIn: 'Zoom In',
+      zoomOut: 'Zoom Out',
+      fitView: 'Fit View',
+    },
+    // View
+    view: {
+      grid: 'Grid',
+      rulers: 'Rulers',
+      snap: 'Snap',
+    },
+    // Playback
+    playback: {
+      play: 'Play',
+      pause: 'Pause',
+      stop: 'Stop',
+      loop: 'Loop',
+    },
     // Toolbar
     toolbar: {
       newProject: 'New Project',
