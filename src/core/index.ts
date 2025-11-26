@@ -46,3 +46,26 @@ export type {
   ProgressCallback,
   FrameRenderCallback,
 } from './export';
+
+// 标签系统
+export { LabelRenderer, CollisionDetector, LabelManager } from './label';
+export type {
+  LabelRenderOptions,
+  RenderedLabel,
+  BoundingBox,
+  LabelCandidate,
+  CollisionConfig,
+  CollisionResult,
+  LabelData,
+  CoordinateProjector,
+  LabelManagerConfig,
+} from './label';
+
+// 历史记录
+export { HistoryManager } from './history';
+export type {
+  HistoryEntry,
+  HistoryConfig,
+  HistoryEvent,
+  HistoryEventCallback,
+} from './history';
