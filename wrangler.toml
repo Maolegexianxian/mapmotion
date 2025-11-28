@@ -1,0 +1,8 @@
+# Cloudflare Wrangler configuration for static assets deploy
+name = "mapmotion"
+compatibility_date = "2025-11-28"
+
+[assets]
+# Directory containing the built static site
+# This matches Vite's build output and Cloudflare Pages "Build output directory"
+directory = "./dist"
