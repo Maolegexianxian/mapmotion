@@ -22,6 +22,12 @@ const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'));
 /** 模板库页面 */
 const TemplatesPage = lazy(() => import('@/pages/TemplatesPage'));
 
+/** 博客列表页面 */
+const BlogPage = lazy(() => import('@/pages/BlogPage'));
+
+/** 博客文章页面 */
+const BlogPostPage = lazy(() => import('@/pages/BlogPostPage'));
+
 /** 设置页面 */
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'));
 
@@ -43,6 +49,10 @@ export const ROUTES = {
   PROJECTS: '/projects',
   /** 模板库 */
   TEMPLATES: '/templates',
+  /** 博客列表 */
+  BLOG: '/blog',
+  /** 博客文章详情 */
+  BLOG_POST: '/blog/:slug',
   /** 设置 */
   SETTINGS: '/settings',
 } as const;
@@ -107,6 +117,10 @@ export function AppRoutes() {
       
       {/* 模板库页面 */}
       <Route path={ROUTES.TEMPLATES} element={<TemplatesPage />} />
+
+      {/* 博客页面 */}
+      <Route path={ROUTES.BLOG} element={<BlogPage />} />
+      <Route path={ROUTES.BLOG_POST} element={<BlogPostPage />} />
       
       {/* 设置页面 */}
       <Route path={ROUTES.SETTINGS} element={<SettingsPage />} />

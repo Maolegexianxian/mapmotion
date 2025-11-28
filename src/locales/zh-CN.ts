@@ -84,6 +84,57 @@ export const zhCN = {
     signup: '注册',
   },
 
+  // 侧边栏
+  sidebar: {
+    layers: '图层',
+    layersDesc: '管理地图图层和要素',
+    assets: '资源',
+    assetsDesc: '管理项目资源文件',
+    search: '搜索',
+    searchDesc: '搜索地点和要素',
+    styles: '样式',
+    stylesDesc: '底图样式和主题配置',
+    expand: '展开侧边栏',
+    collapse: '收起侧边栏',
+    addMarker: '添加标记点',
+    addRoute: '添加路线',
+    addLabel: '添加标签',
+    addData: '导入数据',
+  },
+
+  // 资源
+  assets: {
+    icons: '图标库',
+    images: '图片',
+    data: '数据文件',
+    searchPlaceholder: '搜索资源...',
+    uploadHint: '点击或拖放上传',
+    supportedFormats: '支持 PNG, JPG, SVG, CSV',
+  },
+
+  // 工具
+  tools: {
+    select: '选择工具',
+    pan: '平移工具',
+    marker: '标记点工具',
+    route: '路线工具',
+    measure: '测量工具',
+    grid: '显示网格',
+    showLabels: '显示标签',
+    hideLabels: '隐藏标签',
+    zoomIn: '放大',
+    zoomOut: '缩小',
+    resetBearing: '重置方位角',
+    resetView: '重置视图',
+    fullscreen: '全屏',
+  },
+
+  // 画布
+  canvas: {
+    time: '时间',
+    pressEscToExit: '按 ESC 退出全屏',
+  },
+
   // 首页
   home: {
     hero: {
@@ -495,6 +546,100 @@ export const zhCN = {
     degrees: '度',
     meters: '米',
     kilometers: '公里',
+  },
+
+  // 时间线面板
+  timeline: {
+    title: '时间线',
+    tracks: '轨道',
+    addTrack: '添加轨道',
+    play: '播放',
+    pause: '暂停',
+    stop: '停止',
+    skipBack: '跳到开头',
+    skipForward: '跳到结尾',
+    zoomIn: '放大时间线',
+    zoomOut: '缩小时间线',
+    expand: '展开时间线',
+    collapse: '收起时间线',
+    camera: '镜头动画',
+    path: '路径动画',
+    label: '标签动画',
+    data: '数据动画',
+    overlay: '覆盖层',
+    hide: '隐藏轨道',
+    show: '显示轨道',
+    lock: '锁定轨道',
+    unlock: '解锁轨道',
+  },
+
+  // 属性面板
+  properties: {
+    title: '属性',
+    expand: '展开属性面板',
+    collapse: '收起属性面板',
+    itemsSelected: '个项目已选中',
+    sceneProperties: '场景属性',
+    scene: '场景',
+    sceneName: '场景名称',
+    duration: '时长',
+    camera: '相机',
+    zoom: '缩放级别',
+    pitch: '俯仰角',
+    bearing: '方位角',
+    transform: '位置',
+    longitude: '经度',
+    latitude: '纬度',
+    quickActions: '快捷操作',
+    lock: '锁定',
+    resetToDefault: '重置为默认值',
+  },
+
+  // 通用
+  items: '个项目',
+  add: '添加',
+  
+  // 快捷操作栏
+  quickActions: {
+    title: '快速创建',
+    create: '创建',
+    open: '打开快捷操作',
+    hint: '按快捷键可快速访问',
+    addRoute: '添加路线',
+    addRouteDesc: '创建带动画的路线',
+    addMarker: '添加标记',
+    addMarkerDesc: '在地图上放置标记点',
+    addLabel: '添加标签',
+    addLabelDesc: '添加文字注释',
+    addCamera: '镜头动画',
+    addCameraDesc: '添加镜头移动动画',
+    importData: '导入数据',
+    importDataDesc: '导入 CSV/GeoJSON 数据',
+    useTemplate: '使用模板',
+    useTemplateDesc: '从模板开始创作',
+  },
+  
+  // 欢迎引导
+  welcome: {
+    title: '欢迎使用 MapMotion',
+    subtitle: '几分钟内创建精美的地图动画。选择您想要的开始方式：',
+    createRoute: '创建路线动画',
+    createRouteDesc: '绘制路径并添加流畅的镜头跟随动画',
+    addMarker: '添加位置标记',
+    addMarkerDesc: '在地图上标注兴趣点',
+    createCamera: '镜头动画',
+    createCameraDesc: '创建电影级镜头运动效果',
+    importData: '导入您的数据',
+    importDataDesc: '可视化您的 CSV 或 GeoJSON 数据',
+    browseTemplates: '浏览模板',
+    watchTutorial: '观看教程',
+    dontShowAgain: '不再显示',
+    tip: '提示：按 ? 查看所有快捷键',
+  },
+  
+  // 头部
+  header: {
+    unsavedChanges: '有未保存的更改',
   },
 } as const;
 

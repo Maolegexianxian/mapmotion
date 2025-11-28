@@ -57,6 +57,10 @@ interface EditorState {
   clipboard: unknown | null;
   /** 错误消息 */
   error: string | null;
+  /** 地图样式 ID */
+  mapStyleId: string;
+  /** 地图样式 URL */
+  mapStyleUrl: string;
 }
 
 /** 编辑器操作接口 */
@@ -104,7 +108,13 @@ interface EditorActions {
   // 错误处理
   setError: (error: string | null) => void;
   clearError: () => void;
+  
+  // 地图样式操作
+  setMapStyle: (styleId: string, styleUrl: string) => void;
 }
+
+/** 默认地图样式 URL */
+const DEFAULT_MAP_STYLE_URL = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
 /** 初始状态 */
 const initialState: EditorState = {
@@ -125,6 +135,8 @@ const initialState: EditorState = {
   snapEnabled: true,
   clipboard: null,
   error: null,
+  mapStyleId: 'dark',
+  mapStyleUrl: DEFAULT_MAP_STYLE_URL,
 };
 
 /** 历史管理器实例 */
@@ -327,6 +339,14 @@ export const useEditorStore = create<EditorState & EditorActions>()(
       clearError: () => {
         set((state) => {
           state.error = null;
+        });
+      },
+
+      // 地图样式操作
+      setMapStyle: (styleId, styleUrl) => {
+        set((state) => {
+          state.mapStyleId = styleId;
+          state.mapStyleUrl = styleUrl;
         });
       },
     })),

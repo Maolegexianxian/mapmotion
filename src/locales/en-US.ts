@@ -496,4 +496,150 @@ export const enUS = {
     meters: 'meters',
     kilometers: 'kilometers',
   },
+  
+  // Quick Actions (Floating Action Bar)
+  quickActions: {
+    title: 'Quick Create',
+    create: 'Create',
+    open: 'Open Quick Actions',
+    hint: 'Press shortcut keys for quick access',
+    addRoute: 'Add Route',
+    addRouteDesc: 'Create animated route path',
+    addMarker: 'Add Marker',
+    addMarkerDesc: 'Place a marker on the map',
+    addLabel: 'Add Label',
+    addLabelDesc: 'Add text annotation',
+    addCamera: 'Camera Move',
+    addCameraDesc: 'Add camera animation',
+    importData: 'Import Data',
+    importDataDesc: 'Import CSV/GeoJSON data',
+    useTemplate: 'Use Template',
+    useTemplateDesc: 'Start from a template',
+  },
+  
+  // Welcome Overlay
+  welcome: {
+    title: 'Welcome to MapMotion',
+    subtitle: 'Create stunning map animations in minutes. Choose how you want to start:',
+    createRoute: 'Create Route Animation',
+    createRouteDesc: 'Draw a path and animate it with smooth camera following',
+    addMarker: 'Add Location Markers',
+    addMarkerDesc: 'Place points of interest on your map',
+    createCamera: 'Camera Animation',
+    createCameraDesc: 'Create cinematic camera movements',
+    importData: 'Import Your Data',
+    importDataDesc: 'Visualize your CSV or GeoJSON data',
+    browseTemplates: 'Browse Templates',
+    watchTutorial: 'Watch Tutorial',
+    dontShowAgain: "Don't show this again",
+    tip: 'Tip: Press ? to see all keyboard shortcuts',
+  },
+  
+  // Header
+  header: {
+    unsavedChanges: 'Unsaved changes',
+  },
+  
+  // Timeline (additional)
+  timeline: {
+    title: 'Timeline',
+    tracks: 'tracks',
+    addTrack: 'Add Track',
+    play: 'Play',
+    pause: 'Pause',
+    stop: 'Stop',
+    skipBack: 'Go to Start',
+    skipForward: 'Go to End',
+    zoomIn: 'Zoom In Timeline',
+    zoomOut: 'Zoom Out Timeline',
+    expand: 'Expand Timeline',
+    collapse: 'Collapse Timeline',
+    camera: 'Camera Animation',
+    path: 'Path Animation',
+    label: 'Label Animation',
+    data: 'Data Animation',
+    overlay: 'Overlay',
+    hide: 'Hide Track',
+    show: 'Show Track',
+    lock: 'Lock Track',
+    unlock: 'Unlock Track',
+    loop: 'Loop Playback',
+  },
+  
+  // Properties (additional)
+  properties: {
+    title: 'Properties',
+    expand: 'Expand Properties Panel',
+    collapse: 'Collapse Properties Panel',
+    itemsSelected: 'items selected',
+    sceneProperties: 'Scene Properties',
+    scene: 'Scene',
+    sceneName: 'Scene Name',
+    duration: 'Duration',
+    camera: 'Camera',
+    zoom: 'Zoom Level',
+    pitch: 'Pitch',
+    bearing: 'Bearing',
+    transform: 'Position',
+    longitude: 'Longitude',
+    latitude: 'Latitude',
+    quickActions: 'Quick Actions',
+    lock: 'Lock',
+    resetToDefault: 'Reset to Default',
+  },
+  
+  // Sidebar (additional)
+  sidebar: {
+    layers: 'Layers',
+    layersDesc: 'Manage map layers and features',
+    assets: 'Assets',
+    assetsDesc: 'Manage project assets',
+    search: 'Search',
+    searchDesc: 'Search places and features',
+    styles: 'Styles',
+    stylesDesc: 'Map styles and themes',
+    expand: 'Expand Sidebar',
+    collapse: 'Collapse Sidebar',
+    addMarker: 'Add Marker',
+    addRoute: 'Add Route',
+    addLabel: 'Add Label',
+    addData: 'Import Data',
+  },
+  
+  // Assets
+  assets: {
+    icons: 'Icons',
+    images: 'Images',
+    data: 'Data Files',
+    searchPlaceholder: 'Search assets...',
+    uploadHint: 'Click or drag to upload',
+    supportedFormats: 'Supports PNG, JPG, SVG, CSV',
+  },
+  
+  // Tools
+  tools: {
+    select: 'Select Tool',
+    pan: 'Pan Tool',
+    marker: 'Marker Tool',
+    route: 'Route Tool',
+    measure: 'Measure Tool',
+    grid: 'Show Grid',
+    showLabels: 'Show Labels',
+    hideLabels: 'Hide Labels',
+    zoomIn: 'Zoom In',
+    zoomOut: 'Zoom Out',
+    resetBearing: 'Reset Bearing',
+    resetView: 'Reset View',
+    fullscreen: 'Fullscreen',
+  },
+  
+  // Canvas
+  canvas: {
+    time: 'Time',
+    pressEscToExit: 'Press ESC to exit fullscreen',
+  },
+  
+  // Common items
+  items: 'items',
+  add: 'Add',
 } as const;

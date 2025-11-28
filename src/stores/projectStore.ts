@@ -45,6 +45,20 @@ interface ProjectActions {
   removeScene: (sceneIndex: number) => void;
   /** 更新场景 */
   updateScene: (sceneIndex: number, updates: Partial<Scene>) => void;
+  /** 添加场景元素 */
+  addSceneItem: (sceneIndex: number, item: any) => void;
+  /** 更新场景元素 */
+  updateSceneItem: (sceneIndex: number, itemId: string, updates: any) => void;
+  /** 删除场景元素 */
+  removeSceneItem: (sceneIndex: number, itemId: string) => void;
+  /** 切换元素可见性 */
+  toggleItemVisibility: (sceneIndex: number, itemId: string) => void;
+  /** 切换元素锁定状态 */
+  toggleItemLock: (sceneIndex: number, itemId: string) => void;
+  /** 重排序元素 */
+  reorderSceneItems: (sceneIndex: number, fromIndex: number, toIndex: number) => void;
+  /** 复制场景元素 */
+  duplicateSceneItem: (sceneIndex: number, itemId: string) => void;
   /** 切换当前场景 */
   setCurrentSceneIndex: (index: number) => void;
   /** 标记更改 */
@@ -264,6 +278,116 @@ export const useProjectStore = create<ProjectStore>()(
             if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
               Object.assign(state.currentProject.scenes[sceneIndex], updates);
               state.hasUnsavedChanges = true;
+            }
+          });
+        },
+
+        // 添加场景元素
+        addSceneItem: (sceneIndex, item) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              // 确保元素有默认属性
+              const newItem = {
+                ...item,
+                visible: item.visible ?? true,
+                locked: item.locked ?? false,
+              };
+              state.currentProject.scenes[sceneIndex].items.push(newItem);
+              state.hasUnsavedChanges = true;
+            }
+          });
+        },
+
+        // 更新场景元素
+        updateSceneItem: (sceneIndex, itemId, updates) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              const itemIndex = items.findIndex((item: any) => item.id === itemId);
+              if (itemIndex >= 0 && items[itemIndex]) {
+                items[itemIndex] = { ...items[itemIndex], ...updates };
+                state.hasUnsavedChanges = true;
+              }
+            }
+          });
+        },
+
+        // 删除场景元素
+        removeSceneItem: (sceneIndex, itemId) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              const itemIndex = items.findIndex((item: any) => item.id === itemId);
+              if (itemIndex >= 0) {
+                items.splice(itemIndex, 1);
+                state.hasUnsavedChanges = true;
+              }
+            }
+          });
+        },
+
+        // 切换元素可见性
+        toggleItemVisibility: (sceneIndex, itemId) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              const itemIndex = items.findIndex((item: any) => item.id === itemId);
+              if (itemIndex >= 0 && items[itemIndex]) {
+                const currentVisible = (items[itemIndex] as any).visible ?? true;
+                (items[itemIndex] as any).visible = !currentVisible;
+                state.hasUnsavedChanges = true;
+              }
+            }
+          });
+        },
+
+        // 切换元素锁定状态
+        toggleItemLock: (sceneIndex, itemId) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              const itemIndex = items.findIndex((item: any) => item.id === itemId);
+              if (itemIndex >= 0 && items[itemIndex]) {
+                const currentLocked = (items[itemIndex] as any).locked ?? false;
+                (items[itemIndex] as any).locked = !currentLocked;
+                state.hasUnsavedChanges = true;
+              }
+            }
+          });
+        },
+
+        // 重排序元素
+        reorderSceneItems: (sceneIndex, fromIndex, toIndex) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              if (fromIndex >= 0 && fromIndex < items.length && toIndex >= 0 && toIndex < items.length) {
+                const removed = items[fromIndex];
+                if (removed) {
+                  items.splice(fromIndex, 1);
+                  items.splice(toIndex, 0, removed);
+                  state.hasUnsavedChanges = true;
+                }
+              }
+            }
+          });
+        },
+
+        // 复制场景元素
+        duplicateSceneItem: (sceneIndex, itemId) => {
+          set((state) => {
+            if (state.currentProject && state.currentProject.scenes[sceneIndex]) {
+              const items = state.currentProject.scenes[sceneIndex].items;
+              const item = items.find((item: any) => item.id === itemId);
+              if (item) {
+                const duplicated = {
+                  ...JSON.parse(JSON.stringify(item)),
+                  id: nanoid(),
+                  name: `${item.name} (Copy)`,
+                };
+                items.push(duplicated);
+                state.hasUnsavedChanges = true;
+              }
             }
           });
         },

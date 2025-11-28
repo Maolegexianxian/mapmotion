@@ -25,7 +25,7 @@ export type LanguageCode = keyof typeof SUPPORTED_LANGUAGES;
 /**
  * 默认语言
  */
-export const DEFAULT_LANGUAGE: LanguageCode = 'zh-CN';
+export const DEFAULT_LANGUAGE: LanguageCode = 'en-US';
 
 /**
  * 语言资源配置
@@ -60,7 +60,9 @@ export function initializeI18n() {
     .init({
       // 语言资源
       resources,
-      // 默认语言
+      // 强制默认语言为英文
+      lng: DEFAULT_LANGUAGE,
+      // 回退语言
       fallbackLng: DEFAULT_LANGUAGE,
       // 支持的语言列表
       supportedLngs: Object.keys(SUPPORTED_LANGUAGES),
@@ -73,8 +75,8 @@ export function initializeI18n() {
       },
       // 语言检测配置
       detection: {
-        // 检测顺序：localStorage > navigator > htmlTag
-        order: ['localStorage', 'navigator', 'htmlTag'],
+        // 仅从 localStorage 检测，不从浏览器自动检测
+        order: ['localStorage'],
         // 缓存到 localStorage
         caches: ['localStorage'],
         // localStorage 的键名

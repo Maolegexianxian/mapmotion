@@ -4,6 +4,7 @@
  */
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { HelmetProvider } from 'react-helmet-async';
 
 import App from './App';
 import { initializeI18n } from './locales/i18n';
@@ -31,6 +32,8 @@ if (!rootElement) {
  */
 ReactDOM.createRoot(rootElement).render(
   <React.StrictMode>
-    <App />
+    <HelmetProvider>
+      <App />
+    </HelmetProvider>
   </React.StrictMode>
 );

@@ -1,343 +1,515 @@
 /**
- * 编辑器地图画布组件
- * 使用 MapLibre GL 渲染地图，支持工具交互和标记显示
+ * 编辑器画布组件
+ * 核心地图渲染和交互区域
+ * 
+ * @description
+ * 画布组件是编辑器的核心区域，负责：
+ * - MapLibre GL 地图渲染
+ * - 地图交互（缩放、平移、旋转）
+ * - 图层叠加和可视化
+ * - 标签渲染和碰撞检测
+ * - 地图控件（缩放、指南针、比例尺等）
  */
-import { useRef, useEffect, useState, useCallback } from 'react';
-import maplibregl from 'maplibre-gl';
+import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import Map, { 
+  NavigationControl, 
+  ScaleControl, 
+  GeolocateControl,
+  Source,
+  Layer,
+  type MapRef,
+  type ViewStateChangeEvent,
+} from 'react-map-gl/maplibre';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ZoomIn,
   ZoomOut,
   Compass,
-  Maximize,
+  Maximize2,
   MousePointer,
-  Hand,
+  Move,
+  RotateCcw,
+  Grid3X3,
+  Eye,
+  EyeOff,
   MapPin,
-  Type,
-  Hexagon,
-  Search,
+  Navigation,
+  Crosshair,
 } from 'lucide-react';
 
 import { useProjectStore } from '@/stores/projectStore';
-import { useEditorStore, type EditorTool } from '@/stores/editorStore';
-import { SearchPanel, type SearchResult } from './SearchPanel';
+import { useTimelineStore } from '@/stores/timelineStore';
+import { useEditorStore } from '@/stores/editorStore';
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 
-/** 默认地图样式 URL */
-const DEFAULT_STYLE = 'https://demotiles.maplibre.org/style.json';
-
-/** 工具配置 */
-const TOOLS: Array<{ id: EditorTool; icon: typeof MousePointer; label: string; cursor: string }> = [
-  { id: 'select', icon: MousePointer, label: '选择', cursor: 'default' },
-  { id: 'pan', icon: Hand, label: '平移', cursor: 'grab' },
-  { id: 'draw-point', icon: MapPin, label: '添加标记', cursor: 'crosshair' },
-  { id: 'label', icon: Type, label: '添加标签', cursor: 'text' },
-  { id: 'draw-polygon', icon: Hexagon, label: '绘制区域', cursor: 'crosshair' },
-];
-
-/** 标记数据 */
-interface MarkerData {
-  id: string;
-  lngLat: [number, number];
-  color: string;
-  label?: string;
+/** 视图状态接口 */
+interface ViewState {
+  /** 经度 */
+  longitude: number;
+  /** 纬度 */
+  latitude: number;
+  /** 缩放级别 */
+  zoom: number;
+  /** 俯仰角度 */
+  pitch: number;
+  /** 方位角度 */
+  bearing: number;
 }
 
-/** 初始标记数据 */
-const initialMarkers: MarkerData[] = [
-  { id: 'm1', lngLat: [116.4074, 39.9042], color: '#ef4444', label: '北京' },
-  { id: 'm2', lngLat: [121.4737, 31.2304], color: '#3b82f6', label: '上海' },
-  { id: 'm3', lngLat: [113.2644, 23.1291], color: '#22c55e', label: '广州' },
-];
+/** 地图工具类型 */
+type MapTool = 'select' | 'pan' | 'marker' | 'route' | 'measure';
+
+// 地图样式现在由 editorStore 管理，通过 StyleSelector 组件切换
+
+/** 默认视图状态 - 北京 */
+const DEFAULT_VIEW_STATE: ViewState = {
+  longitude: 116.4074,
+  latitude: 39.9042,
+  zoom: 10,
+  pitch: 45,
+  bearing: 0,
+};
 
 /**
- * EditorCanvas - 地图画布组件
+ * EditorCanvas - 编辑器画布组件
+ * 
+ * @description
+ * 提供完整的地图编辑功能，包括：
+ * - 地图视图管理
+ * - 图层渲染
+ * - 交互工具栏
+ * - 状态信息显示
  */
 export function EditorCanvas() {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<maplibregl.Map | null>(null);
-  const markersRef = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const { t } = useTranslation();
+  const mapRef = useRef<MapRef>(null);
   
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [mousePosition, setMousePosition] = useState<{ lng: number; lat: number } | null>(null);
-  const [showSearch, setShowSearch] = useState(false);
-  const [markers, setMarkers] = useState<MarkerData[]>(initialMarkers);
-
-  const { currentProject, currentSceneIndex } = useProjectStore();
-  const currentScene = currentProject?.scenes[currentSceneIndex];
+  /** 当前项目数据 */
+  const { currentProject } = useProjectStore();
   
-  const { currentTool, setTool, select } = useEditorStore();
+  /** 时间线当前时间 */
+  const currentTime = useTimelineStore((state: { currentTime: number }) => state.currentTime);
+  
+  /** 地图样式 URL */
+  const mapStyleUrl = useEditorStore((state) => state.mapStyleUrl);
+  
+  /** 视图状态 */
+  const [viewState, setViewState] = useState<ViewState>(DEFAULT_VIEW_STATE);
+  
+  /** 当前选中的工具 */
+  const [activeTool, setActiveTool] = useState<MapTool>('select');
+  
+  /** 是否显示网格 */
+  const [showGrid, setShowGrid] = useState(false);
+  
+  /** 是否显示标签 */
+  const [showLabels, setShowLabels] = useState(true);
+  
+  // 使用从 editorStore 获取的地图样式 URL，不再使用本地状态
+  
+  /** 是否全屏 */
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
+  /** 鼠标悬停坐标 */
+  const [hoverCoords, setHoverCoords] = useState<{ lng: number; lat: number } | null>(null);
 
-  // 初始化地图
+  /**
+   * 初始化地图视图
+   * 根据项目配置设置初始相机位置
+   */
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
-
-    const map = new maplibregl.Map({
-      container: mapContainerRef.current,
-      style: DEFAULT_STYLE,
-      center: currentScene?.cameraDefaults.center
-        ? [currentScene.cameraDefaults.center.longitude, currentScene.cameraDefaults.center.latitude]
-        : [116.4074, 39.9042],
-      zoom: currentScene?.cameraDefaults.zoom ?? 4,
-      pitch: currentScene?.cameraDefaults.pitch ?? 0,
-      bearing: currentScene?.cameraDefaults.bearing ?? 0,
-      antialias: true,
-    });
-
-    map.on('load', () => {
-      setIsMapLoaded(true);
-    });
-
-    // 鼠标移动追踪
-    map.on('mousemove', (e) => {
-      setMousePosition({ lng: e.lngLat.lng, lat: e.lngLat.lat });
-    });
-
-    map.on('mouseout', () => {
-      setMousePosition(null);
-    });
-
-    mapRef.current = map;
-
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
-  }, []);
-
-  // 根据工具更新光标
-  useEffect(() => {
-    if (!mapRef.current) return;
-    const tool = TOOLS.find((t) => t.id === currentTool);
-    if (tool) {
-      mapRef.current.getCanvas().style.cursor = tool.cursor;
-    }
-    
-    // 平移工具禁用拖拽交互
-    if (currentTool === 'pan') {
-      mapRef.current.dragPan.enable();
-    }
-  }, [currentTool]);
-
-  // 渲染标记
-  useEffect(() => {
-    if (!mapRef.current || !isMapLoaded) return;
-
-    // 清除现有标记
-    markersRef.current.forEach((marker) => marker.remove());
-    markersRef.current.clear();
-
-    // 添加新标记
-    markers.forEach((data) => {
-      const el = document.createElement('div');
-      el.className = 'marker-element';
-      el.style.cssText = `
-        width: 24px;
-        height: 24px;
-        background: ${data.color};
-        border: 2px solid white;
-        border-radius: 50% 50% 50% 0;
-        transform: rotate(-45deg);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        cursor: pointer;
-      `;
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat(data.lngLat)
-        .addTo(mapRef.current!);
-
-      // 点击选中
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        select({ type: 'feature', id: data.id });
+    if (currentProject?.scenes?.[0]?.cameraDefaults) {
+      const camera = currentProject.scenes[0].cameraDefaults;
+      setViewState({
+        longitude: camera.center.longitude,
+        latitude: camera.center.latitude,
+        zoom: camera.zoom,
+        pitch: camera.pitch,
+        bearing: camera.bearing,
       });
-
-      // 添加标签
-      if (data.label) {
-        const popup = new maplibregl.Popup({
-          offset: 25,
-          closeButton: false,
-          closeOnClick: false,
-        }).setHTML(`<div style="font-size:12px;font-weight:500;">${data.label}</div>`);
-        
-        el.addEventListener('mouseenter', () => popup.addTo(mapRef.current!));
-        el.addEventListener('mouseleave', () => popup.remove());
-        marker.setPopup(popup);
-      }
-
-      markersRef.current.set(data.id, marker);
-    });
-  }, [markers, isMapLoaded, select]);
-
-  // 地图点击事件
-  useEffect(() => {
-    if (!mapRef.current || !isMapLoaded) return;
-
-    const handleClick = (e: maplibregl.MapMouseEvent) => {
-      if (currentTool === 'draw-point') {
-        // 添加新标记
-        const newMarker: MarkerData = {
-          id: `m_${Date.now()}`,
-          lngLat: [e.lngLat.lng, e.lngLat.lat],
-          color: '#f59e0b',
-          label: `标记 ${markers.length + 1}`,
-        };
-        setMarkers((prev) => [...prev, newMarker]);
-        select({ type: 'feature', id: newMarker.id });
-      }
-    };
-
-    mapRef.current.on('click', handleClick);
-    return () => {
-      mapRef.current?.off('click', handleClick);
-    };
-  }, [currentTool, markers.length, isMapLoaded, select]);
-
-  // 放大
-  const handleZoomIn = useCallback(() => {
-    mapRef.current?.zoomIn();
-  }, []);
-
-  // 缩小
-  const handleZoomOut = useCallback(() => {
-    mapRef.current?.zoomOut();
-  }, []);
-
-  // 重置方位
-  const handleResetBearing = useCallback(() => {
-    mapRef.current?.easeTo({ bearing: 0, pitch: 0 });
-  }, []);
-
-  // 适应视图
-  const handleFitView = useCallback(() => {
-    if (markers.length > 0) {
-      const bounds = new maplibregl.LngLatBounds();
-      markers.forEach((m) => bounds.extend(m.lngLat));
-      mapRef.current?.fitBounds(bounds, { padding: 50 });
-    } else if (currentScene?.bounds) {
-      mapRef.current?.fitBounds([
-        [currentScene.bounds.west, currentScene.bounds.south],
-        [currentScene.bounds.east, currentScene.bounds.north],
-      ]);
     }
-  }, [currentScene, markers]);
+  }, [currentProject]);
 
-  // 搜索选择
-  const handleSearchSelect = useCallback((result: SearchResult) => {
-    mapRef.current?.flyTo({
-      center: [result.coordinates.lng, result.coordinates.lat],
-      zoom: 12,
+  /**
+   * 处理视图状态变化
+   * @param evt - 视图状态变化事件
+   */
+  const handleViewStateChange = useCallback((evt: ViewStateChangeEvent) => {
+    setViewState(evt.viewState);
+  }, []);
+
+  /**
+   * 处理鼠标移动
+   * 更新悬停坐标显示
+   */
+  const handleMouseMove = useCallback((evt: maplibregl.MapMouseEvent) => {
+    setHoverCoords({
+      lng: Number(evt.lngLat.lng.toFixed(6)),
+      lat: Number(evt.lngLat.lat.toFixed(6)),
     });
-    setShowSearch(false);
+  }, []);
+
+  /**
+   * 重置视图到默认位置
+   */
+  const handleResetView = useCallback(() => {
+    if (currentProject?.scenes?.[0]?.cameraDefaults) {
+      const camera = currentProject.scenes[0].cameraDefaults;
+      setViewState({
+        longitude: camera.center.longitude,
+        latitude: camera.center.latitude,
+        zoom: camera.zoom,
+        pitch: camera.pitch,
+        bearing: camera.bearing,
+      });
+    } else {
+      setViewState(DEFAULT_VIEW_STATE);
+    }
+  }, [currentProject]);
+
+  /**
+   * 放大地图
+   */
+  const handleZoomIn = useCallback(() => {
+    setViewState(prev => ({
+      ...prev,
+      zoom: Math.min(prev.zoom + 1, 22),
+    }));
+  }, []);
+
+  /**
+   * 缩小地图
+   */
+  const handleZoomOut = useCallback(() => {
+    setViewState(prev => ({
+      ...prev,
+      zoom: Math.max(prev.zoom - 1, 0),
+    }));
+  }, []);
+
+  /**
+   * 重置方位角
+   */
+  const handleResetBearing = useCallback(() => {
+    setViewState(prev => ({
+      ...prev,
+      bearing: 0,
+      pitch: 0,
+    }));
+  }, []);
+
+  /**
+   * 切换全屏模式
+   */
+  const toggleFullscreen = useCallback(() => {
+    setIsFullscreen(prev => !prev);
+  }, []);
+
+  /**
+   * 工具栏配置
+   */
+  const tools = useMemo(() => [
+    { id: 'select' as MapTool, icon: MousePointer, titleKey: 'tools.select' },
+    { id: 'pan' as MapTool, icon: Move, titleKey: 'tools.pan' },
+    { id: 'marker' as MapTool, icon: MapPin, titleKey: 'tools.marker' },
+    { id: 'route' as MapTool, icon: Navigation, titleKey: 'tools.route' },
+    { id: 'measure' as MapTool, icon: Crosshair, titleKey: 'tools.measure' },
+  ], []);
+
+  /**
+   * 渲染工具按钮
+   * @param tool - 工具配置
+   */
+  const renderToolButton = useCallback((tool: typeof tools[0]) => {
+    const Icon = tool.icon;
+    const isActive = activeTool === tool.id;
+    
+    return (
+      <button
+        key={tool.id}
+        onClick={() => setActiveTool(tool.id)}
+        className={`
+          flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150
+          ${isActive 
+            ? 'bg-primary-600 text-white' 
+            : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+          }
+        `}
+        title={t(tool.titleKey)}
+        aria-label={t(tool.titleKey)}
+        aria-pressed={isActive}
+      >
+        <Icon className="h-4 w-4" />
+      </button>
+    );
+  }, [activeTool, t]);
+
+  /**
+   * 格式化坐标显示
+   * @param value - 坐标值
+   * @param type - 坐标类型
+   */
+  const formatCoordinate = useCallback((value: number, type: 'lng' | 'lat') => {
+    const direction = type === 'lng' 
+      ? (value >= 0 ? 'E' : 'W')
+      : (value >= 0 ? 'N' : 'S');
+    return `${Math.abs(value).toFixed(6)}° ${direction}`;
   }, []);
 
   return (
-    <div className="relative flex-1 bg-editor-panel">
+    <div className={`relative flex-1 overflow-hidden bg-editor-bg ${isFullscreen ? 'fixed inset-0 z-50' : ''}`}>
       {/* 地图容器 */}
-      <div ref={mapContainerRef} className="h-full w-full" />
-
-      {/* 加载指示器 */}
-      {!isMapLoaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-editor-panel">
-          <div className="flex flex-col items-center gap-2">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-            <div className="text-sm text-slate-400">加载地图中...</div>
+      <Map
+        ref={mapRef}
+        {...viewState}
+        onMove={handleViewStateChange}
+        onMouseMove={handleMouseMove}
+        mapStyle={mapStyleUrl}
+        style={{ width: '100%', height: '100%' }}
+        attributionControl={false}
+        reuseMaps
+        dragRotate
+        pitchWithRotate
+      >
+        {/* 导航控件 */}
+        <NavigationControl 
+          position="bottom-right" 
+          showCompass 
+          showZoom={false}
+          visualizePitch
+        />
+        
+        {/* 比例尺控件 */}
+        <ScaleControl 
+          position="bottom-left" 
+          maxWidth={100}
+          unit="metric"
+        />
+        
+        {/* 定位控件 */}
+        <GeolocateControl 
+          position="bottom-right"
+          trackUserLocation
+        />
+        
+        {/* 网格覆盖层 */}
+        {showGrid && (
+          <Source
+            id="grid-source"
+            type="geojson"
+            data={{
+              type: 'FeatureCollection',
+              features: [],
+            }}
+          >
+            <Layer
+              id="grid-layer"
+              type="line"
+              paint={{
+                'line-color': '#ffffff',
+                'line-opacity': 0.1,
+                'line-width': 1,
+              }}
+            />
+          </Source>
+        )}
+      </Map>
+      
+      {/* 左上角工具栏 */}
+      <div className="absolute left-4 top-4 flex flex-col gap-2">
+        {/* 工具选择器 */}
+        <div className="flex flex-col gap-1 rounded-lg border border-editor-border bg-editor-sidebar/95 p-1.5 backdrop-blur-sm">
+          {tools.map(renderToolButton)}
+        </div>
+        
+        {/* 视图工具 */}
+        <div className="flex flex-col gap-1 rounded-lg border border-editor-border bg-editor-sidebar/95 p-1.5 backdrop-blur-sm">
+          <button
+            onClick={() => setShowGrid(!showGrid)}
+            className={`
+              flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150
+              ${showGrid 
+                ? 'bg-primary-600 text-white' 
+                : 'text-slate-400 hover:bg-slate-700 hover:text-slate-200'
+              }
+            `}
+            title={t('tools.grid')}
+            aria-label={t('tools.grid')}
+            aria-pressed={showGrid}
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={() => setShowLabels(!showLabels)}
+            className={`
+              flex h-8 w-8 items-center justify-center rounded-md transition-all duration-150
+              ${showLabels 
+                ? 'text-slate-200 hover:bg-slate-700' 
+                : 'text-slate-500 hover:bg-slate-700 hover:text-slate-400'
+              }
+            `}
+            title={showLabels ? t('tools.hideLabels') : t('tools.showLabels')}
+            aria-label={showLabels ? t('tools.hideLabels') : t('tools.showLabels')}
+          >
+            {showLabels ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+      
+      {/* 右上角缩放控件 */}
+      <div className="absolute right-4 top-4 flex flex-col gap-2">
+        {/* 缩放控制 */}
+        <div className="flex flex-col gap-1 rounded-lg border border-editor-border bg-editor-sidebar/95 p-1.5 backdrop-blur-sm">
+          <button
+            onClick={handleZoomIn}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+            title={t('tools.zoomIn')}
+            aria-label={t('tools.zoomIn')}
+          >
+            <ZoomIn className="h-4 w-4" />
+          </button>
+          
+          <div className="flex h-8 items-center justify-center text-xs font-medium text-slate-300">
+            {viewState.zoom.toFixed(1)}
           </div>
+          
+          <button
+            onClick={handleZoomOut}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+            title={t('tools.zoomOut')}
+            aria-label={t('tools.zoomOut')}
+          >
+            <ZoomOut className="h-4 w-4" />
+          </button>
         </div>
-      )}
-
-      {/* 左侧工具栏 */}
-      <div className="absolute left-4 top-4 flex flex-col gap-1 rounded-lg bg-white/95 p-1 shadow-lg dark:bg-slate-800/95">
-        {TOOLS.map((tool) => {
-          const Icon = tool.icon;
-          const isActive = currentTool === tool.id;
-          return (
-            <button
-              key={tool.id}
-              onClick={() => setTool(tool.id)}
-              className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
-                isActive
-                  ? 'bg-primary-500 text-white'
-                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
-              }`}
-              title={tool.label}
-            >
-              <Icon className="h-4 w-4" />
-            </button>
-          );
-        })}
-        <hr className="my-1 border-slate-200 dark:border-slate-600" />
-        <button
-          onClick={() => setShowSearch(true)}
-          className="flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          title="搜索地点"
-        >
-          <Search className="h-4 w-4" />
-        </button>
+        
+        {/* 视图重置 */}
+        <div className="flex flex-col gap-1 rounded-lg border border-editor-border bg-editor-sidebar/95 p-1.5 backdrop-blur-sm">
+          <button
+            onClick={handleResetBearing}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+            title={t('tools.resetBearing')}
+            aria-label={t('tools.resetBearing')}
+            style={{ transform: `rotate(${-viewState.bearing}deg)` }}
+          >
+            <Compass className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={handleResetView}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+            title={t('tools.resetView')}
+            aria-label={t('tools.resetView')}
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          
+          <button
+            onClick={toggleFullscreen}
+            className="flex h-8 w-8 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+            title={t('tools.fullscreen')}
+            aria-label={t('tools.fullscreen')}
+          >
+            <Maximize2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
-
-      {/* 右侧地图控件 */}
-      <div className="absolute right-4 top-4 flex flex-col gap-1 rounded-lg bg-white/95 p-1 shadow-lg dark:bg-slate-800/95">
-        <button
-          onClick={handleZoomIn}
-          className="flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          title="放大"
-        >
-          <ZoomIn className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleZoomOut}
-          className="flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          title="缩小"
-        >
-          <ZoomOut className="h-4 w-4" />
-        </button>
-        <hr className="my-1 border-slate-200 dark:border-slate-600" />
-        <button
-          onClick={handleResetBearing}
-          className="flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          title="重置方位"
-        >
-          <Compass className="h-4 w-4" />
-        </button>
-        <button
-          onClick={handleFitView}
-          className="flex h-8 w-8 items-center justify-center rounded text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700"
-          title="适应视图"
-        >
-          <Maximize className="h-4 w-4" />
-        </button>
-      </div>
-
-      {/* 底部信息栏 */}
-      <div className="absolute bottom-4 left-4 flex items-center gap-3">
+      
+      {/* 底部状态栏 */}
+      <div className="absolute bottom-4 left-1/2 flex -translate-x-1/2 items-center gap-4 rounded-lg border border-editor-border bg-editor-sidebar/95 px-4 py-2 backdrop-blur-sm">
+        {/* 当前时间 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">{t('canvas.time')}</span>
+          <span className="font-mono text-sm text-slate-200">
+            {formatTime(currentTime)}
+          </span>
+        </div>
+        
+        <div className="h-4 w-px bg-editor-border" />
+        
         {/* 坐标显示 */}
-        <div className="rounded bg-black/60 px-2 py-1 text-xs text-white font-mono">
-          {mousePosition
-            ? `${mousePosition.lng.toFixed(4)}, ${mousePosition.lat.toFixed(4)}`
-            : '移动鼠标查看坐标'}
+        {hoverCoords && (
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500">Lng</span>
+              <span className="font-mono text-xs text-slate-300">
+                {formatCoordinate(hoverCoords.lng, 'lng')}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-slate-500">Lat</span>
+              <span className="font-mono text-xs text-slate-300">
+                {formatCoordinate(hoverCoords.lat, 'lat')}
+              </span>
+            </div>
+          </div>
+        )}
+        
+        <div className="h-4 w-px bg-editor-border" />
+        
+        {/* 缩放级别 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Zoom</span>
+          <span className="font-mono text-sm text-slate-200">
+            {viewState.zoom.toFixed(2)}
+          </span>
         </div>
-        {/* 当前工具 */}
-        <div className="rounded bg-primary-500/80 px-2 py-1 text-xs text-white">
-          {TOOLS.find((t) => t.id === currentTool)?.label || '选择'}
+        
+        {/* 俯仰角和方位角 */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Pitch</span>
+          <span className="font-mono text-sm text-slate-200">
+            {viewState.pitch.toFixed(0)}°
+          </span>
         </div>
-        {/* 标记数量 */}
-        <div className="rounded bg-black/60 px-2 py-1 text-xs text-white">
-          {markers.length} 个标记
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">Bearing</span>
+          <span className="font-mono text-sm text-slate-200">
+            {viewState.bearing.toFixed(0)}°
+          </span>
         </div>
       </div>
-
-      {/* 搜索面板 */}
-      {showSearch && (
-        <div className="absolute left-16 top-4 w-80 rounded-lg bg-editor-panel shadow-xl">
-          <SearchPanel
-            onSelect={handleSearchSelect}
-            onClose={() => setShowSearch(false)}
-          />
-        </div>
-      )}
+      
+      {/* 数据源署名 */}
+      <div className="absolute bottom-4 right-4 rounded bg-black/50 px-2 py-1 text-xs text-slate-400">
+        © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer" className="hover:text-slate-200">OpenStreetMap</a>
+        {' | '}
+        © <a href="https://carto.com/attributions" target="_blank" rel="noopener noreferrer" className="hover:text-slate-200">CARTO</a>
+      </div>
+      
+      {/* 全屏退出提示 */}
+      <AnimatePresence>
+        {isFullscreen && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="absolute left-1/2 top-4 -translate-x-1/2 rounded-lg bg-black/70 px-4 py-2 text-sm text-white"
+          >
+            {t('canvas.pressEscToExit')}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
+}
+
+/**
+ * 格式化时间显示
+ * @param ms - 毫秒数
+ * @returns 格式化后的时间字符串 (MM:SS.ms)
+ */
+function formatTime(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = Math.floor((ms % 1000) / 10);
+  
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(2, '0')}`;
 }
 
 export default EditorCanvas;
